@@ -6,6 +6,8 @@
 
 不限制电视品牌或型号，不需要手机配套 App、账户或云服务。不提供静默安装或绕过固件限制的能力。
 
+正式安装包：[GitHub Releases](https://github.com/AceCandy/up2tv/releases/latest)。下载 APK 即可，`.sha256` 文件可用于校验下载完整性。
+
 ## 使用
 
 1. 用 U 盘或电视支持的其他方式，首次安装 Up2TV。
@@ -64,11 +66,12 @@ Windows 使用 `gradlew.bat`。修改网页时，另执行 `node --check app/src
 
 ## 正式签名构建
 
-发布密钥和密码保存在不入仓的 `.signing/` 目录。首次在其他机器配置时，将
+本地发布密钥和密码保存在不入仓的 `.signing/` 目录。首次在其他机器配置时，将
 `signing.properties.example` 复制为 `.signing/signing.properties`，填写自己的密码，并放入对应的 PKCS12 密钥文件。
 `storeFile` 相对于项目根目录；使用示例路径时为 `.signing/up2tv-release.p12`。
 配置使用 Java Properties 格式，密码中的反斜杠需写为 `\\`。在 Linux/macOS 上，将目录权限设为 `700`，其中的密钥及密码文件设为 `600`。
 已有正式版本的维护者应恢复原有签名备份，不要重新生成密钥。
+CI 可通过 `UP2TV_STORE_PASSWORD`、`UP2TV_KEY_PASSWORD` 环境变量传入密码，优先于本地配置，不需要把密码写进 Runner 的配置文件。
 
 ```sh
 ./gradlew --no-daemon :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease
@@ -79,14 +82,40 @@ Windows 使用 `gradlew.bat`。修改网页时，另执行 `node --check app/src
 - 完整备份 `.signing/` 到受保护的异地或离线位置，密码文件也属于敏感资料；不要通过公开仓库、Issue 或聊天发送。
 - 发布密钥应长期保持不变；遗失后无法再用原签名发布更新。后续升级同时递增 `versionCode` 并更新 `versionName`。
 - 从调试版切换到此正式签名通常需要卸载旧版。卸载会清除 Up2TV 保存的 APK，但不会卸载其他已安装应用。
-- 当前 GitHub Actions 仅生成调试包，不持有正式密钥，也不会自动发布正式版本。
+- GitHub 的 `release` 环境保存正式签名 Secrets；普通调试 CI 不使用这些 Secrets。公开仓库中的代码和下载附件不包含密钥或密码。
+
+## 自动发布正式版
+
+推送 `v主版本.次版本.修订号` 标签时，[Android Release](https://github.com/AceCandy/up2tv/actions/workflows/release.yml) 会执行 release 测试、Lint、签名构建及 APK 校验，全部通过后创建 GitHub Release，附上 APK 和 SHA-256 校验文件。
+
+发布步骤：
+
+1. 在 `app/build.gradle.kts` 更新 `versionName` 并递增 `versionCode`，提交到 `main`。
+2. 确认普通 CI 通过，再为该提交创建并推送对应版本标签，例如发布下一版：
+
+   ```sh
+   git tag -a v0.1.1 -m '发布 v0.1.1'
+   git push origin v0.1.1
+   ```
+
+标签必须指向已合入 `main` 的提交，且必须与 APK 的 `versionName` 一致。已发布版本不要移动标签或覆盖附件；修复应递增版本后发布。
+
+`release` 环境仅允许 `v*` 标签，配置三个环境 Secrets：
+
+- `UP2TV_KEYSTORE_BASE64`：现有 `.signing/up2tv-release.p12` 的 Base64 编码。
+- `UP2TV_STORE_PASSWORD`：该密钥库密码。
+- `UP2TV_KEY_PASSWORD`：别名 `up2tv` 对应的密钥密码。
+
+Base64 只用于传输二进制，不是加密。通过 GitHub Secrets 保存，勿放入 Git、Issue 或日志。
+工作流固定校验现有正式证书的 SHA-256 指纹，构建后清理 Runner 的签名文件，且不回写 Gradle 缓存。签名密钥仍需自行安全备份。
+只有可信维护者应拥有工作流修改和版本标签推送权限；环境的标签限制不能替代对维护者的信任。后续增加协作者时，应一并审查标签权限和环境审批设置。
 
 ## 自动检查与测试包
 
 推送到 `main`、提交 PR 或手动运行 [Android CI](https://github.com/AceCandy/up2tv/actions/workflows/android.yml) 时，自动检查 Gradle Wrapper、网页脚本语法、单元测试和 Android Lint，并生成调试 APK。
 打开成功运行记录，在 Artifacts 中下载 `up2tv-debug-<提交 SHA>`；测试和 Lint 报告单独保存，保留 14 天。
 
-CI 调试签名可能随运行变化，不能保证覆盖本地或其他构建的安装。需要正式包时使用上述本地签名构建；当前工作流不发布 Release。
+CI 调试签名可能随运行变化，不能保证覆盖本地或其他构建的安装。日常安装请优先使用 Releases 中的正式签名包。
 
 参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)，产品范围见 [PRODUCT.md](PRODUCT.md)。
 

@@ -1,0 +1,129 @@
+name: Android Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Sign and publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      EXPECTED_CERT_SHA256: 0fa032fdb62e61250871715f9717df95b4c4778623058b78fe5ff2bf8f8a86c2
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate tag and main ancestry
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Expected vMAJOR.MINOR.PATCH"; exit 1; }
+          git merge-base --is-ancestor HEAD origin/main
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle and validate wrapper
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: basic
+          cache-read-only: true
+
+      - name: Install Android SDK packages
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0"'
+
+      - name: Restore signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.UP2TV_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          umask 077
+          mkdir -m 700 .signing
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > .signing/up2tv-release.p12
+          test -s .signing/up2tv-release.p12
+          printf 'storeFile=.signing/up2tv-release.p12\nkeyAlias=up2tv\n' > .signing/signing.properties
+
+      - name: Test, lint and build signed APK
+        env:
+          UP2TV_STORE_PASSWORD: ${{ secrets.UP2TV_STORE_PASSWORD }}
+          UP2TV_KEY_PASSWORD: ${{ secrets.UP2TV_KEY_PASSWORD }}
+        run: |
+          test -n "$UP2TV_STORE_PASSWORD"
+          test -n "$UP2TV_KEY_PASSWORD"
+          node --check app/src/main/assets/app.js
+          ./gradlew --no-daemon :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease
+
+      - name: Remove signing files
+        if: ${{ always() }}
+        run: rm -rf .signing
+
+      - name: Verify APK and prepare downloads
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import shutil
+          import subprocess
+
+          tag = os.environ["RELEASE_TAG"]
+          output = Path("app/build/outputs/apk/release")
+          metadata = json.loads((output / "output-metadata.json").read_text())
+          assert metadata["applicationId"] == "dev.up2tv" and metadata["variantName"] == "release"
+          assert len(metadata["elements"]) == 1
+          assert metadata["elements"][0]["versionName"] == tag[1:], "Tag does not match APK version"
+          apk = output / "app-release.apk"
+          tools = Path(os.environ["ANDROID_HOME"]) / "build-tools/35.0.0"
+          verification = subprocess.check_output(
+              [str(tools / "apksigner"), "verify", "--print-certs", "--min-sdk-version", "23", str(apk)], text=True)
+          fingerprints = set(re.findall(r"certificate SHA-256 digest: ([a-f0-9]+)", verification))
+          assert fingerprints == {os.environ["EXPECTED_CERT_SHA256"]}, "Unexpected signing certificate"
+          badging = subprocess.check_output([str(tools / "aapt"), "dump", "badging", str(apk)], text=True)
+          assert "application-debuggable" not in badging, "Debuggable APK cannot be released"
+          subprocess.run([str(tools / "zipalign"), "-c", "4", str(apk)], check=True)
+          destination = Path("app/build/outputs/publish")
+          destination.mkdir(parents=True, exist_ok=True)
+          published = destination / f"Up2TV-{tag}.apk"
+          shutil.copyfile(apk, published)
+          digest = hashlib.sha256(published.read_bytes()).hexdigest()
+          published.with_suffix(".apk.sha256").write_text(f"{digest}  {published.name}\n")
+          print("Version, signature, alignment and non-debuggable checks passed.")
+          PY
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq .sha)"
+          cat > "$RUNNER_TEMP/release-notes.md" <<'EOF'
+          正式签名 APK，支持 Android 6.0（API 23）及以上。
+
+          - 下载 APK 安装；`.sha256` 文件用于校验下载完整性。
+          - 从旧调试版切换时需先卸载旧版，会清除 Up2TV 保存的 APK，但不影响其他已安装应用。
+          - 后续正式版沿用同一签名，可在系统允许时覆盖升级。
+          - 自动测试、Lint 和签名检查已通过；具体电视固件的安装行为仍需实测。
+          EOF
+          gh release create "$RELEASE_TAG" \
+            "app/build/outputs/publish/Up2TV-${RELEASE_TAG}.apk" \
+            "app/build/outputs/publish/Up2TV-${RELEASE_TAG}.apk.sha256" \
+            --verify-tag --title "Up2TV ${RELEASE_TAG}" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" --generate-notes

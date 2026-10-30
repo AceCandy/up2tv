@@ -24,9 +24,11 @@ android {
         create("release") {
             storeType = "PKCS12"
             releaseSigning.getProperty("storeFile")?.let { storeFile = rootProject.file(it) }
-            storePassword = releaseSigning.getProperty("storePassword")
+            storePassword = providers.environmentVariable("UP2TV_STORE_PASSWORD").orNull
+                ?: releaseSigning.getProperty("storePassword")
             keyAlias = releaseSigning.getProperty("keyAlias")
-            keyPassword = releaseSigning.getProperty("keyPassword")
+            keyPassword = providers.environmentVariable("UP2TV_KEY_PASSWORD").orNull
+                ?: releaseSigning.getProperty("keyPassword")
         }
     }
     buildTypes {
