@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <title>Up2TV · 上传到电视</title>
+  <link rel="stylesheet" href="/style.css">
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <header><a href="/" aria-label="Up2TV 首页">Up2TV</a></header>
+  <main>
+    <section class="workspace" aria-label="上传操作">
+      <form id="pair-form">
+        <h1>连接电视</h1>
+        <label for="pin">电视上的连接码</label>
+        <input id="pin" name="pin" type="text" inputmode="numeric" pattern="[0-9]{6}"
+          maxlength="6" autocomplete="off" spellcheck="false" placeholder="六位数字" required aria-describedby="pair-status">
+        <button id="pair-button" type="submit">连接电视</button>
+        <p id="pair-status" role="status" aria-live="polite"></p>
+      </form>
+      <form id="upload-form" hidden>
+        <h1>上传到电视</h1>
+        <label for="apk">选择 APK <span id="file-limit">单个最大 1 GiB</span></label>
+        <input id="apk" name="apk" type="file" accept=".apk,application/vnd.android.package-archive" aria-describedby="file-limit file-info" required>
+        <p id="file-info" hidden></p>
+        <button id="upload-button" type="submit" disabled>上传到电视</button>
+        <button id="cancel-button" class="secondary" type="button" hidden>取消上传</button>
+        <div id="transfer" hidden>
+          <label for="progress" id="progress-label">上传进度</label>
+          <progress id="progress" max="100" value="0"></progress>
+        </div>
+        <p id="upload-status" role="status" aria-live="polite"></p>
+        <button id="reconnect" class="secondary" type="button" hidden>重新连接</button>
+      </form>
+      <noscript>此页面需要 JavaScript 才能上传。请启用 JavaScript 或换用系统浏览器。</noscript>
+    </section>
+  </main>
+  <footer><p>同一局域网 · 上传时保持页面打开</p><p>HTTP 未加密，仅用于可信网络。</p></footer>
+</body>
+</html>

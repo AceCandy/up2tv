@@ -1,0 +1,68 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:paddingLeft="32dp" android:paddingRight="32dp"
+    android:paddingTop="24dp" android:paddingBottom="24dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/app_name" android:textSize="24sp" android:textStyle="bold"
+            android:textColor="@color/accent" />
+        <TextView android:id="@+id/status" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:layout_marginStart="24dp"
+            android:text="正在开启接收…" android:textSize="17sp" android:gravity="end"
+            android:accessibilityLiveRegion="polite" />
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:layout_marginTop="20dp"
+        android:orientation="horizontal" android:baselineAligned="false">
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="match_parent" android:orientation="vertical"
+            android:paddingEnd="24dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:layout_width="0dp" android:layout_weight="1"
+                    android:layout_height="wrap_content" android:text="已接收的文件"
+                    android:textSize="21sp" android:textStyle="bold" />
+                <TextView android:id="@+id/package_count" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:textSize="16sp"
+                    android:textColor="@color/secondary" />
+            </LinearLayout>
+            <TextView android:id="@+id/detail" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="6dp"
+                android:textSize="15sp" android:textColor="@color/secondary" />
+            <ProgressBar android:id="@+id/progress" style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent" android:layout_height="6dp"
+                android:layout_marginTop="8dp" android:max="100" android:visibility="gone" />
+            <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:layout_marginTop="8dp" android:fillViewport="true">
+                <LinearLayout android:id="@+id/package_list" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical"
+                    android:divider="@drawable/list_divider" android:showDividers="middle" />
+            </ScrollView>
+        </LinearLayout>
+        <View android:layout_width="1dp" android:layout_height="match_parent" android:background="@color/divider" />
+        <ScrollView android:layout_width="256dp" android:layout_height="match_parent"
+            android:paddingStart="24dp" android:fillViewport="true">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_horizontal" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="扫码上传" android:textSize="21sp" android:textStyle="bold" />
+                <ImageView android:id="@+id/qr" android:layout_width="208dp" android:layout_height="208dp"
+                    android:layout_marginTop="12dp" android:src="@drawable/ic_launcher"
+                    android:contentDescription="正在开启接收" />
+                <TextView android:id="@+id/address" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:gravity="center" android:text="正在获取地址…"
+                    android:textSize="16sp" android:textColor="@color/accent" />
+                <TextView android:id="@+id/pin" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp" android:gravity="center" android:textSize="20sp" />
+                <Button android:id="@+id/toggle" style="@style/ActionButton"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:layout_marginEnd="0dp" android:text="开启接收" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" android:gravity="center" android:textSize="14sp"
+                    android:textColor="@color/secondary"
+                    android:text="离开页面，二维码自动失效\nHTTP 未加密 · 仅限可信局域网" />
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+</LinearLayout>

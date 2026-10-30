@@ -1,0 +1,27 @@
+<resources>
+    <color name="surface">#132D29</color>
+    <color name="on_surface">#F5F1E7</color>
+    <color name="secondary">#BDCFC7</color>
+    <color name="accent">#EAC77B</color>
+    <color name="divider">#35554C</color>
+    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">@color/surface</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:textColorPrimary">@color/on_surface</item>
+        <item name="android:textColorSecondary">@color/secondary</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+    </style>
+    <style name="ActionButton" parent="android:style/Widget.Material.Button">
+        <item name="android:background">@drawable/button</item>
+        <item name="android:textColor">@color/button_text</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:paddingLeft">20dp</item>
+        <item name="android:paddingRight">20dp</item>
+        <item name="android:layout_marginEnd">12dp</item>
+        <item name="android:focusable">true</item>
+    </style>
+</resources>
