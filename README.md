@@ -60,15 +60,33 @@ cd up2tv
 Windows 使用 `gradlew.bat`。修改网页时，另执行 `node --check app/src/main/assets/app.js`。
 
 测试 APK 输出：`app/build/outputs/apk/debug/app-debug.apk`。
-这是本地 debug 签名构建，不是商店发行包。正式分发前应配置自己的长期签名密钥；
-签名改变后不能直接覆盖旧安装，可能需要卸载旧版。不要把签名密钥提交到仓库。
+这是本地 debug 签名构建。正式分发使用下面的 release 构建。
+
+## 正式签名构建
+
+发布密钥和密码保存在不入仓的 `.signing/` 目录。首次在其他机器配置时，将
+`signing.properties.example` 复制为 `.signing/signing.properties`，填写自己的密码，并放入对应的 PKCS12 密钥文件。
+`storeFile` 相对于项目根目录；使用示例路径时为 `.signing/up2tv-release.p12`。
+配置使用 Java Properties 格式，密码中的反斜杠需写为 `\\`。在 Linux/macOS 上，将目录权限设为 `700`，其中的密钥及密码文件设为 `600`。
+已有正式版本的维护者应恢复原有签名备份，不要重新生成密钥。
+
+```sh
+./gradlew --no-daemon :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease
+```
+
+输出：`app/build/outputs/apk/release/app-release.apk`。缺少签名资料时正式构建会失败，不会回退到调试签名；未配置签名文件的克隆仍可构建调试包。
+
+- 完整备份 `.signing/` 到受保护的异地或离线位置，密码文件也属于敏感资料；不要通过公开仓库、Issue 或聊天发送。
+- 发布密钥应长期保持不变；遗失后无法再用原签名发布更新。后续升级同时递增 `versionCode` 并更新 `versionName`。
+- 从调试版切换到此正式签名通常需要卸载旧版。卸载会清除 Up2TV 保存的 APK，但不会卸载其他已安装应用。
+- 当前 GitHub Actions 仅生成调试包，不持有正式密钥，也不会自动发布正式版本。
 
 ## 自动检查与测试包
 
 推送到 `main`、提交 PR 或手动运行 [Android CI](https://github.com/AceCandy/up2tv/actions/workflows/android.yml) 时，自动检查 Gradle Wrapper、网页脚本语法、单元测试和 Android Lint，并生成调试 APK。
 打开成功运行记录，在 Artifacts 中下载 `up2tv-debug-<提交 SHA>`；测试和 Lint 报告单独保存，保留 14 天。
 
-CI 调试签名可能随运行变化，不能保证覆盖本地或其他构建的安装。正式发布需单独配置长期签名；当前工作流不发布 Release。
+CI 调试签名可能随运行变化，不能保证覆盖本地或其他构建的安装。需要正式包时使用上述本地签名构建；当前工作流不发布 Release。
 
 参与开发见 [CONTRIBUTING.md](CONTRIBUTING.md)，产品范围见 [PRODUCT.md](PRODUCT.md)。
 
@@ -93,6 +111,7 @@ CI 调试签名可能随运行变化，不能保证覆盖本地或其他构建�
 
 ## 当前验证记录
 
+- `testReleaseUnitTest`：16 项通过；`lintRelease`：0 错误；正式 APK 已校验独立签名证书、v1/v2 签名、文件对齐和非调试标记。缺少签名资料时正式构建按预期失败。
 - `testDebugUnitTest`：16 项通过，包括连续保存多个安装包、按接收时间倒序、重启后恢复列表、校验阶段关闭接收和旧会话不能覆盖新会话文件。
 - `assembleDebug`：成功；`lintDebug`：0 错误，31 警告，1 提示。警告主要为中文文案未资源化、版本升级建议及兼容性建议，未通过关闭检查来隐藏。
 - Chromium：精简单列上传页已验证连接码、扫码入口、连续两次真实 loopback 上传和文件 SHA-256 一致；1366px / 390px / 320px（含长文件名）均无横向溢出。
@@ -100,3 +119,7 @@ CI 调试签名可能随运行变化，不能保证覆盖本地或其他构建�
 - 通过可控浏览器事件验证上传超时后的重试、重新连接及焦点恢复。
 - 浏览器测试复用生产 `UploadServer`，但 APK 元数据校验使用测试替身；不代表 Android 安装包解析或系统安装已经通过。
 - 当前环境无 KVM 使用权限，本次软件模拟器安装和截图超时，未完成原生界面与安装流程验收。安卓手机、iOS、目标电视仍需实测。
+
+## 许可证
+
+项目代码采用 [MIT License](LICENSE)，版权归 AceCandy 所有。第三方依赖及 Gradle Wrapper 保留各自的许可证。

@@ -19,6 +19,7 @@ local.properties
 *.p12
 keystore.properties
 signing.properties
+.signing/
 .env
 .env.*
 !.env.example

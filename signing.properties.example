@@ -1,0 +1,4 @@
+storeFile=.signing/up2tv-release.p12
+storePassword=CHANGE_ME
+keyAlias=up2tv
+keyPassword=CHANGE_ME
