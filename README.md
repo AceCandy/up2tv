@@ -8,6 +8,16 @@
 
 正式安装包：[GitHub Releases](https://github.com/AceCandy/up2tv/releases/latest)。下载 APK 即可，`.sha256` 文件可用于校验下载完整性。
 
+## 界面预览
+
+电视端布局示意（非实机截图，二维码及文件信息仅供展示）：
+
+![电视端布局示意](docs/images/tv-layout.png)
+
+手机端浏览器截图（上传页面为演示连接状态）：
+
+<img src="docs/images/mobile-connect.png" alt="手机端连接电视页面" width="240"> <img src="docs/images/mobile-upload.png" alt="手机端选择 APK 上传页面" width="240">
+
 ## 使用
 
 1. 用 U 盘或电视支持的其他方式，首次安装 Up2TV。
